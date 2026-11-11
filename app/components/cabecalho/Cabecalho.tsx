@@ -3,9 +3,6 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PRODUTOS } from "../../dados/produtos";
-import { VENDEDORES } from "../../dados/vendedores";
-import { CATEGORIAS } from "../../dados/categorias";
 import { IProduto } from "../../interfaces/produto";
 import { useCarrinho } from "@/app/contexts/CarrinhoContexto";
 import { useFavoritos } from "@/app/contexts/FavoritosContexto";
@@ -37,6 +34,10 @@ export function Cabecalho() {
   const { usuario, isLogado, logout } = useAuth();
   const { abrirDrawer } = useDrawer();
   const router = useRouter();
+  const PRODUTOS = [];
+  const CATEGORIAS = [];
+  const VENDEDORES = [];
+
 
   const resultados = useMemo(() => {
     if (!busca.trim()) return [];

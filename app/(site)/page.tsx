@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCarrinho } from "../contexts/CarrinhoContexto";
 import { useFavoritos } from "../contexts/FavoritosContexto";
-import { PRODUTOS } from "../dados/produtos";
-import { CATEGORIAS } from "../dados/categorias";
-import { VENDEDORES } from "../dados/vendedores";
 import { IProduto } from "../interfaces/produto";
 
+
+const CATEGORIAS = [];
+const VENDEDORES = [];
 
 function formatarPreco(preco: number) {
   return (preco / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -36,25 +36,26 @@ export default function PaginaInicial() {
   const searchParams = useSearchParams();
   const categoriaUrl = searchParams.get("categoria") ?? "";
   const buscaUrl = searchParams.get("busca") ?? "";
+  const [produtos, setProdutos] = useState<Array<IProduto>>([]);
 
   const categoriasMap: Record<string, string> = {
-    "roupas":         "Roupa",
-    "bonecos":        "Boneco",
+    "roupas": "Roupa",
+    "bonecos": "Boneco",
     "action-figures": "Action Figure",
-    "mangas":         "Mangá",
-    "acessorios":     "Acessório",
+    "mangas": "Mangá",
+    "acessorios": "Acessório",
   };
 
   const nomeCategoriaAtual: Record<string, string> = {
-    "roupas":         "Roupas",
-    "bonecos":        "Bonecos",
+    "roupas": "Roupas",
+    "bonecos": "Bonecos",
     "action-figures": "Action Figures",
-    "mangas":         "Mangás",
-    "acessorios":     "Acessórios",
+    "mangas": "Mangás",
+    "acessorios": "Acessórios",
   };
 
   const produtosFiltrados = useMemo(() => {
-    return PRODUTOS.filter((p) => {
+    return produtos.filter((p) => {
       const termo = buscaUrl.toLowerCase();
       const categoria = CATEGORIAS.find((c) => c.id === p.categoriaID);
       const vendedor = VENDEDORES.find((v) => v.id === p.vendedorID);
@@ -66,14 +67,44 @@ export default function PaginaInicial() {
 
       const passaBusca = termo
         ? p.nome.toLowerCase().includes(termo) ||
-          (categoria?.nome ?? "").toLowerCase().includes(termo) ||
-          p.tag.toLowerCase().includes(termo) ||
-          (vendedor?.nome ?? "").toLowerCase().includes(termo)
+        (categoria?.nome ?? "").toLowerCase().includes(termo) ||
+        p.tag.toLowerCase().includes(termo) ||
+        (vendedor?.nome ?? "").toLowerCase().includes(termo)
         : true;
 
       return passaCategoria && passaBusca;
     });
-  }, [buscaUrl, categoriaUrl]);
+  }, [buscaUrl, categoriaUrl, produtos]);
+
+  useEffect(() => {
+    const getProdutos = async () => {
+      const response = await fetch("http://localhost:8080/api/produtos")
+        .then(async body => {
+          const data = await body.json()
+          console.log(data)
+          let temp: Array<IProduto> = []
+          for(let produto of data){
+            temp.push({
+              id: produto["id"],
+              vendedorID: produto["vendedorId"],
+              nome: produto["nome"],
+              descricao: produto["descricao"],
+              preco: produto["preco"],
+              tag: produto["tag"],
+              foto: produto["foto"],
+              categoriaID: produto["categoriaId"]
+            })
+          }
+          return temp
+        })
+        .catch((e) => {
+          console.error(e)
+          return []
+        })
+        setProdutos(response)
+    }
+    getProdutos()
+  }, [])
 
   return (
     <>
@@ -102,8 +133,8 @@ export default function PaginaInicial() {
         {categoriaUrl
           ? nomeCategoriaAtual[categoriaUrl]
           : buscaUrl
-          ? "Resultados da busca"
-          : "Produtos em destaque"}
+            ? "Resultados da busca"
+            : "Produtos em destaque"}
         <span className="text-sm font-normal text-slate-400 ml-2">
           ({produtosFiltrados.length}{" "}
           {produtosFiltrados.length === 1 ? "produto" : "produtos"})
@@ -134,11 +165,10 @@ export default function PaginaInicial() {
                   <button
                     onClick={() => alternarFavorito(produto)}
                     aria-label={estaFavoritado(produto.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-                    className={`absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm transition-all ${
-                      estaFavoritado(produto.id)
-                        ? "bg-red-500 text-white"
-                        : "bg-white/80 text-slate-400 hover:text-red-500"
-                    }`}
+                    className={`absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm transition-all ${estaFavoritado(produto.id)
+                      ? "bg-red-500 text-white"
+                      : "bg-white/80 text-slate-400 hover:text-red-500"
+                      }`}
                   >
                     <svg
                       width="16"
